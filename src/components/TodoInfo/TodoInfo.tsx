@@ -1,15 +1,12 @@
 import React from 'react';
 import { UserInfo } from '../UserInfo';
-import { ITodo } from '../../interfaces/ITodo';
-import users from '../../api/users';
+import { INewTodo } from '../../interfaces/INewTodo';
 
 type Prop = {
-  todo: ITodo;
+  todo: INewTodo;
 };
 
 export const TodoInfo: React.FC<Prop> = ({ todo }) => {
-  const user = users.find(item => item.id === todo.userId);
-
   return (
     <article
       data-id={todo.id}
@@ -17,7 +14,7 @@ export const TodoInfo: React.FC<Prop> = ({ todo }) => {
     >
       <h2 className="TodoInfo__title">{todo.title}</h2>
 
-      {user ? <UserInfo user={user} /> : <p>User not found</p>}
+      {todo.user && <UserInfo user={todo.user} />}
     </article>
   );
 };

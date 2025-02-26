@@ -1,14 +1,9 @@
 import React from 'react';
+import { IUser } from '../../interfaces/IUser';
 
 type Prop = {
-  user: {
-    id: number;
-    name: string;
-    username: string;
-    email: string;
-  };
+  user: IUser;
 };
-
 export const UserInfo: React.FC<Prop> = ({ user }) => {
   return (
     <a className="UserInfo" href={'mailto:' + user.email}>

@@ -2,39 +2,68 @@ import React, { useState } from 'react';
 import './App.scss';
 
 import usersFromServer from './api/users';
-import todos from './api/todos';
+import todosFromServer from './api/todos';
 import { TodoList } from './components/TodoList';
+import { ITodo } from './interfaces/ITodo';
+import { INewTodo } from './interfaces/INewTodo';
 
 export const App = () => {
+  function findUserById(id: number) {
+    return usersFromServer.find(user => user.id === id);
+  }
+
+  const todosWithUsers = todosFromServer.map(todo => ({
+    ...todo,
+    user: findUserById(todo.userId),
+  }));
   const [selectedUser, setSelectedUser] = useState('0');
+  const [todos, setTodos] = useState<ITodo[]>([...todosWithUsers]);
   const [title, setTitle] = useState('');
-  const [todosFromServer, setTodosFromServer] = useState(todos);
+  const [isTitleEmpty, setIsTitleEmpty] = useState(true);
+  const [isUserEmpty, setIsUserEmpty] = useState(true);
+
+  function onCheck(input: string): void {
+    if (input === 'title') {
+      if (title.trim().length > 0) {
+        setIsTitleEmpty(false);
+      } else {
+        setIsTitleEmpty(true);
+      }
+    } else if (input === 'user') {
+      if (selectedUser !== '0') {
+        setIsUserEmpty(false);
+      } else {
+        setIsUserEmpty(true);
+      }
+    }
+  }
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    type Todo = {
-      id: number;
-      title: string;
-      completed: boolean;
-      userId: number;
-    };
 
-    const user = usersFromServer.find(item => item.username === selectedUser);
+    const user = findUserById(Number(selectedUser));
 
     if (!user) {
       return;
     }
 
-    const newTodo: Todo = {
-      id: todosFromServer.length + 1,
+    const newId =
+      todos.length > 0 ? Math.max(...todos.map(todo => todo.id)) + 1 : 1;
+    const newTodo: INewTodo = {
+      id: newId,
       title: title,
       completed: false,
       userId: user.id,
+      user,
     };
 
-    setTodosFromServer([...todosFromServer, newTodo]);
-    setTitle('');
-    setSelectedUser('0');
+    if (!isTitleEmpty && !isUserEmpty) {
+      setTodos(prev => [...prev, newTodo]);
+      setTitle('');
+      setSelectedUser('0');
+      onCheck('title');
+      onCheck('user');
+    }
   };
 
   return (
@@ -45,38 +74,45 @@ export const App = () => {
         <div className="field">
           <input
             type="text"
-            onChange={e => setTitle(e.target.value)}
+            onChange={e => {
+              setTitle(e.target.value);
+              setIsTitleEmpty(e.target.value.trim().length === 0);
+            }}
             data-cy="titleInput"
             value={title}
+            placeholder="Title"
+            onBlur={() => onCheck('title')}
           />
-          {!title.trim() && <span className="error">Please enter a title</span>}
+          {isTitleEmpty && <span className="error">Please enter a title</span>}
         </div>
 
         <div className="field">
           <select
             data-cy="userSelect"
             value={selectedUser}
-            onChange={e => setSelectedUser(e.target.value)}
+            onChange={e => {
+              setSelectedUser(e.target.value);
+              setIsUserEmpty(e.target.value === '0');
+            }}
+            onBlur={() => onCheck('user')}
           >
             <option value="0" disabled>
               Choose a user
             </option>
             {usersFromServer.map(user => (
-              <option key={user.id} value={user.username}>
+              <option key={user.id} value={user.id}>
                 {user.name}
               </option>
             ))}
           </select>
-          {selectedUser === '0' && (
-            <span className="error">Please choose a user</span>
-          )}
+          {isUserEmpty && <span className="error">Please choose a user</span>}
         </div>
 
         <button type="submit" data-cy="submitButton">
           Add
         </button>
       </form>
-      <TodoList todos={todosFromServer} />
+      <TodoList todos={todos} />
     </div>
   );
 };
